@@ -25,10 +25,10 @@ export const AboutPage: React.FC = () => {
           <span>Simulation Model & Synthetic Data Notice</span>
         </div>
         <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-          In accordance with the product specification, no proprietary ball-by-ball dataset is bundled. All innings totals are generated on-the-fly client-side using a calibrated <strong>Box-Muller Gaussian sampler</strong> with T20-realistic base parameters (Base mean: 169 runs, Home SD: 24 runs, Away SD: 25.2 runs, sample size: $n=15$ home and $n=15$ away per ground). Scores are clipped to $[95, 260]$ and rounded to whole integers.
+          In accordance with the product specification, no proprietary ball-by-ball dataset is bundled. All innings totals are generated on-the-fly client-side using a calibrated <strong>Box-Muller Gaussian sampler</strong> with T20-realistic base parameters (Base mean: 169 runs, Home SD: 24 runs, Away SD: 25.2 runs, sample size: n = 15 home and n = 15 away per ground). Scores are clipped to [95, 260] and rounded to whole integers.
         </p>
         <p className="text-xs text-[var(--text-muted)]">
-          Built-in true home ground effects range from $+11$ runs (Chinnaswamy) to $-2$ runs (Mullanpur) to guarantee heterogeneous, pedagogically sound test scenarios across seasons.
+          Built-in true home ground effects range from +11 runs (Chinnaswamy) to −2 runs (Mullanpur) to guarantee heterogeneous, pedagogically sound test scenarios across seasons.
         </p>
       </section>
 
@@ -140,7 +140,7 @@ export const AboutPage: React.FC = () => {
             <div>
               <strong className="text-[var(--text-primary)]">Zero-Dependency Visualizations:</strong>
               <div className="text-[var(--text-muted)] mt-0.5">
-                Custom SVG population pyramids, dynamic $t$-curves, and mirrored frequency bars.
+                Custom SVG population pyramids, dynamic t-distribution curves, and mirrored frequency bars.
               </div>
             </div>
           </div>
