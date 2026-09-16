@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Day Match Palette (Light Mode: Sunlit Stadium Turf & Pavilions) */
+  --bg-primary: #f4f7f5;
+  --bg-secondary: #e9f0ec;
+  --surface-card: #ffffff;
+  --surface-card-subtle: #f9fbf9;
+  --surface-border: #dbe4dd;
+  --surface-border-strong: #c2d3c6;
+  --text-primary: #0f1915;
+  --text-secondary: #3d5248;
+  --text-muted: #627b70;
+  
+  --turf-accent: #059669;
+  --turf-accent-subtle: #ecfdf5;
+  --floodlight-accent: #b45309;
+  --floodlight-glow: rgba(245, 158, 11, 0.15);
+
+  --home-brand: #0284c7;
+  --home-brand-bg: #e0f2fe;
+  --away-brand: #d97706;
+  --away-brand-bg: #fef3c7;
+
+  --verdict-sig-bg: #d1fae5;
+  --verdict-sig-text: #065f46;
+  --verdict-sig-border: #34d399;
+
+  --verdict-insig-bg: #fef3c7;
+  --verdict-insig-text: #92400e;
+  --verdict-insig-border: #fcd34d;
+
+  --grid-line: rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 4px 20px -2px rgba(16, 37, 28, 0.06);
+}
+
+.dark {
+  /* Night Match Palette (Dark Mode: Stadium Under Towering Floodlights) */
+  --bg-primary: #090e17;
+  --bg-secondary: #0e1624;
+  --surface-card: #121c2e;
+  --surface-card-subtle: #172338;
+  --surface-border: #1e2e48;
+  --surface-border-strong: #2a3e60;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  
+  --turf-accent: #10b981;
+  --turf-accent-subtle: rgba(16, 185, 129, 0.12);
+  --floodlight-accent: #fbbf24;
+  --floodlight-glow: rgba(251, 191, 36, 0.2);
+
+  --home-brand: #38bdf8;
+  --home-brand-bg: rgba(56, 189, 248, 0.15);
+  --away-brand: #fb923c;
+  --away-brand-bg: rgba(251, 146, 60, 0.15);
+
+  --verdict-sig-bg: rgba(16, 185, 129, 0.15);
+  --verdict-sig-text: #34d399;
+  --verdict-sig-border: rgba(16, 185, 129, 0.4);
+
+  --verdict-insig-bg: rgba(245, 158, 11, 0.15);
+  --verdict-insig-text: #fbbf24;
+  --verdict-insig-border: rgba(245, 158, 11, 0.4);
+
+  --grid-line: rgba(255, 255, 255, 0.04);
+  --shadow-card: 0 10px 30px -5px rgba(0, 0, 0, 0.5);
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  transition: background-color 0.25s ease, color 0.25s ease;
+  min-height: 100vh;
+}
+
+/* Custom sport scoreboard display font */
+.font-scoreboard {
+  font-family: 'Chakra Petch', sans-serif;
+}
+
+/* Subtle stadium turf pattern overlay */
+.stadium-grid-bg {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, var(--grid-line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid-line) 1px, transparent 1px);
+}
+
+/* Smooth scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--surface-border-strong);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
