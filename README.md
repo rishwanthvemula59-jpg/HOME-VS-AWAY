@@ -1,6 +1,8 @@
 # PitchEdge 🏏
 > **"Is home advantage real, or just noise? Test it, ground by ground."**
 
+🚀 **Live Production Deployment:** [https://pitchedge-ten.vercel.app](https://pitchedge-ten.vercel.app)
+
 PitchEdge is an interactive statistics and sports analytics product that runs live **Welch's two-sample $t$-tests** on simulated IPL innings-scoring data to test the **Home Advantage Hypothesis** across India's 10 premier cricket grounds.
 
 Built for **Module VII (Testing of Hypothesis)**, PitchEdge is engineered and polished to the standard of a production-grade sports analytics SaaS tool.
