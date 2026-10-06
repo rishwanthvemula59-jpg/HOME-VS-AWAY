@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import type { SeasonData, StadiumData } from '../types/stats';
+import type { SeasonData, StadiumData, Innings } from '../types/stats';
+import type { SimulationOptions } from '../lib/simulator';
 import { FranchiseBadge } from '../components/FranchiseBadge';
 import { Scoreboard } from '../components/Scoreboard';
 import { PopulationPyramid } from '../components/PopulationPyramid';
@@ -7,21 +8,52 @@ import { PooledHistogram } from '../components/PooledHistogram';
 import { TDistributionPlot } from '../components/TDistributionPlot';
 import { RiskCallout } from '../components/RiskCallout';
 import { StatNumber } from '../components/StatNumber';
-import { Layers, MapPin, Zap, ChevronRight } from 'lucide-react';
+import { SimulationControls } from '../components/SimulationControls';
+import { MatchInspector } from '../components/MatchInspector';
+import { HeadToHeadComparison } from '../components/HeadToHeadComparison';
+import { LiveMatchSimulator } from '../components/LiveMatchSimulator';
+import { 
+  Layers, 
+  MapPin, 
+  Zap, 
+  ChevronRight, 
+  Sliders, 
+  Edit3, 
+  Swords, 
+  Activity, 
+  BarChart3 
+} from 'lucide-react';
 
 interface SimulatorPageProps {
   seasonData: SeasonData;
   selectedStadiumId: string;
   setSelectedStadiumId: (id: string) => void;
   onNavigateToLeaderboard: () => void;
+  simulationOptions: SimulationOptions;
+  onChangeSimulationOptions: (opts: SimulationOptions) => void;
+  onResimulate: () => void;
+  onResetSimulationOptions: () => void;
+  isResimulating: boolean;
+  onUpdateStadiumInnings: (stadiumId: string, home: Innings[], away: Innings[]) => void;
+  onResetStadiumInnings: (stadiumId: string) => void;
 }
+
+export type SimulatorSubTab = 'overview' | 'sandbox' | 'inspector' | 'head-to-head' | 'live-match';
 
 export const SimulatorPage: React.FC<SimulatorPageProps> = ({
   seasonData,
   selectedStadiumId,
   setSelectedStadiumId,
   onNavigateToLeaderboard,
+  simulationOptions,
+  onChangeSimulationOptions,
+  onResimulate,
+  onResetSimulationOptions,
+  isResimulating,
+  onUpdateStadiumInnings,
+  onResetStadiumInnings,
 }) => {
+  const [subTab, setSubTab] = useState<SimulatorSubTab>('overview');
   const [viewMode, setViewMode] = useState<'stratified' | 'pooled'>(() => {
     if (typeof window !== 'undefined') {
       const v = new URLSearchParams(window.location.search).get('view');
@@ -37,6 +69,7 @@ export const SimulatorPage: React.FC<SimulatorPageProps> = ({
   const pooledStats = seasonData.pooled.stats;
   const isPooled = viewMode === 'pooled';
   const activeStats = isPooled ? pooledStats : currentStadium.stats;
+  const totalInnings = seasonData.pooled.homeInnings.length + seasonData.pooled.awayInnings.length;
 
   return (
     <div className="space-y-6 pb-12">
@@ -44,7 +77,7 @@ export const SimulatorPage: React.FC<SimulatorPageProps> = ({
       <section className="relative overflow-hidden rounded-3xl border border-[var(--surface-border)] bg-[var(--surface-card)] p-6 sm:p-8 shadow-[var(--shadow-card)]">
         {/* Subtle decorative stadium floodlight glow */}
         <div className="absolute top-0 right-0 w-96 h-96 bg-[var(--floodlight-glow)] rounded-full blur-3xl pointer-events-none -mr-20 -mt-20 opacity-60" />
-        
+
         <div className="relative z-10 max-w-4xl">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[var(--turf-accent-subtle)] border border-[var(--turf-accent)]/30 text-xs font-semibold text-[var(--turf-accent)] uppercase tracking-wider mb-4">
             <Zap className="w-3.5 h-3.5" />
@@ -58,7 +91,7 @@ export const SimulatorPage: React.FC<SimulatorPageProps> = ({
 
           {/* Live Headline Stat Sentence */}
           <p className="mt-3 text-sm sm:text-base text-[var(--text-secondary)] leading-relaxed max-w-3xl">
-            Across 10 grounds and 300 simulated innings, home teams average{' '}
+            Across 10 grounds and {totalInnings} simulated innings, home teams average{' '}
             <strong className="text-[var(--text-primary)] font-scoreboard text-base sm:text-lg">
               <StatNumber
                 value={pooledStats.meanDiff}
@@ -72,7 +105,7 @@ export const SimulatorPage: React.FC<SimulatorPageProps> = ({
               {pooledStats.pValue < 0.0001 ? '< 0.0001' : pooledStats.pValue.toFixed(4)}
             </span>
             , {pooledStats.isSignificant ? 'statistically significant' : 'not statistically significant'}).
-            Explore grounds individually to discover which stadiums produce genuine statistical edges.
+            Explore grounds individually or use the interactive sandbox tools below.
           </p>
 
           <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -83,7 +116,10 @@ export const SimulatorPage: React.FC<SimulatorPageProps> = ({
               <Layers className="w-4 h-4 text-[var(--turf-accent)]" />
               <span>
                 {viewMode === 'stratified' ? 'Pooled League View' : 'Per-Ground View'}
-                <span className="hidden sm:inline"> {viewMode === 'stratified' ? '(300 Innings)' : '(30 Innings)'}</span>
+                <span className="hidden sm:inline">
+                  {' '}
+                  ({isPooled ? `${totalInnings} Innings` : `${currentStadium.homeInnings.length * 2} Innings`})
+                </span>
               </span>
             </button>
 
@@ -98,7 +134,76 @@ export const SimulatorPage: React.FC<SimulatorPageProps> = ({
         </div>
       </section>
 
-      {/* 2. Stadium Picker Bar (When in Stratified Mode) */}
+      {/* 2. Interactive Sub-Navigation Hub */}
+      <section className="bg-[var(--surface-card)] border border-[var(--surface-border)] rounded-2xl p-2 shadow-[var(--shadow-card)]">
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-thin">
+          <button
+            onClick={() => setSubTab('overview')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all ${
+              subTab === 'overview'
+                ? 'bg-[var(--turf-accent)] text-white shadow-sm'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-subtle)]'
+            }`}
+          >
+            <BarChart3 className="w-4 h-4" />
+            <span>Scoreboard & Distributions</span>
+          </button>
+
+          <button
+            onClick={() => setSubTab('sandbox')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all ${
+              subTab === 'sandbox'
+                ? 'bg-[var(--turf-accent)] text-white shadow-sm'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-subtle)]'
+            }`}
+          >
+            <Sliders className="w-4 h-4" />
+            <span>Sandbox Controls</span>
+            <span className="text-[10px] px-1.5 py-0.2 rounded bg-black/20 font-mono">
+              n={simulationOptions.sampleSize ?? 15}
+            </span>
+          </button>
+
+          <button
+            onClick={() => setSubTab('inspector')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all ${
+              subTab === 'inspector'
+                ? 'bg-[var(--turf-accent)] text-white shadow-sm'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-subtle)]'
+            }`}
+          >
+            <Edit3 className="w-4 h-4" />
+            <span>Match Inspector & What-If</span>
+          </button>
+
+          <button
+            onClick={() => setSubTab('head-to-head')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all ${
+              subTab === 'head-to-head'
+                ? 'bg-[var(--turf-accent)] text-white shadow-sm'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-subtle)]'
+            }`}
+          >
+            <Swords className="w-4 h-4" />
+            <span>Head-to-Head</span>
+          </button>
+
+          <button
+            onClick={() => setSubTab('live-match')}
+            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider whitespace-nowrap transition-all ${
+              subTab === 'live-match'
+                ? 'bg-[var(--turf-accent)] text-white shadow-sm'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-card-subtle)]'
+            }`}
+          >
+            <Activity className="w-4 h-4" />
+            <span>Live Match Simulator</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping shrink-0" />
+          </button>
+        </div>
+      </section>
+
+      {/* 3. Stadium Picker Bar (Always available for quick franchise switching) */}
       <section className="space-y-2">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -154,7 +259,17 @@ export const SimulatorPage: React.FC<SimulatorPageProps> = ({
                   <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-bold text-[var(--text-primary)] truncate max-w-[120px]">
-                        {stadium.config.franchise.replace('Royal Challengers Bengaluru', 'RCB').replace('Chennai Super Kings', 'CSK').replace('Kolkata Knight Riders', 'KKR').replace('Mumbai Indians', 'MI').replace('Sunrisers Hyderabad', 'SRH').replace('Gujarat Titans', 'GT').replace('Delhi Capitals', 'DC').replace('Rajasthan Royals', 'RR').replace('Lucknow Super Giants', 'LSG').replace('Punjab Kings', 'PBKS')}
+                        {stadium.config.franchise
+                          .replace('Royal Challengers Bengaluru', 'RCB')
+                          .replace('Chennai Super Kings', 'CSK')
+                          .replace('Kolkata Knight Riders', 'KKR')
+                          .replace('Mumbai Indians', 'MI')
+                          .replace('Sunrisers Hyderabad', 'SRH')
+                          .replace('Gujarat Titans', 'GT')
+                          .replace('Delhi Capitals', 'DC')
+                          .replace('Rajasthan Royals', 'RR')
+                          .replace('Lucknow Super Giants', 'LSG')
+                          .replace('Punjab Kings', 'PBKS')}
                       </span>
                       <span
                         className={`w-2 h-2 rounded-full shrink-0 ${
@@ -165,7 +280,8 @@ export const SimulatorPage: React.FC<SimulatorPageProps> = ({
                     </div>
                     <div className="text-[10px] text-[var(--text-muted)] font-mono">
                       {stadium.stats.meanDiff > 0 ? '+' : ''}
-                      {stadium.stats.meanDiff.toFixed(1)}r | p={stadium.stats.pValue < 0.01 ? '<0.01' : stadium.stats.pValue.toFixed(2)}
+                      {stadium.stats.meanDiff.toFixed(1)}r | p=
+                      {stadium.stats.pValue < 0.01 ? '<0.01' : stadium.stats.pValue.toFixed(2)}
                     </div>
                   </div>
                 </button>
@@ -175,7 +291,57 @@ export const SimulatorPage: React.FC<SimulatorPageProps> = ({
         )}
       </section>
 
-      {/* 3. Venue Details Header Bar (if stratified) */}
+      {/* 4. Active Sub-Tab View Rendering */}
+
+      {/* VIEW A: SANDBOX CONTROLS */}
+      {subTab === 'sandbox' && (
+        <SimulationControls
+          options={simulationOptions}
+          onChangeOptions={onChangeSimulationOptions}
+          onResimulate={onResimulate}
+          onReset={onResetSimulationOptions}
+          isResimulating={isResimulating}
+          totalInningsCount={totalInnings}
+        />
+      )}
+
+      {/* VIEW B: MATCH INSPECTOR & WHAT-IF */}
+      {subTab === 'inspector' && (
+        <MatchInspector
+          stadium={currentStadium}
+          alpha={simulationOptions.alpha ?? 0.05}
+          onUpdateInnings={(home, away) => onUpdateStadiumInnings(currentStadium.config.id, home, away)}
+          onResetStadium={() => onResetStadiumInnings(currentStadium.config.id)}
+        />
+      )}
+
+      {/* VIEW C: HEAD-TO-HEAD */}
+      {subTab === 'head-to-head' && (
+        <HeadToHeadComparison
+          seasonData={seasonData}
+          initialStadiumAId={selectedStadiumId}
+          initialStadiumBId={selectedStadiumId === 'csk' ? 'rcb' : 'csk'}
+        />
+      )}
+
+      {/* VIEW D: LIVE MATCH SIMULATOR */}
+      {subTab === 'live-match' && (
+        <LiveMatchSimulator
+          stadium={currentStadium}
+          onAddMatchToDataset={(hInning, aInning) => {
+            onUpdateStadiumInnings(currentStadium.config.id, [
+              ...currentStadium.homeInnings,
+              hInning,
+            ], [
+              ...currentStadium.awayInnings,
+              aInning,
+            ]);
+          }}
+        />
+      )}
+
+      {/* VIEW E: OVERVIEW / CORE HYPOTHESIS SCOREBOARD & DISTRIBUTIONS */}
+      {/* Venue Header Bar (if stratified) */}
       {!isPooled && (
         <div className="bg-[var(--surface-card)] border border-[var(--surface-border)] rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-[var(--shadow-card)]">
           <div className="flex items-center gap-3.5">
@@ -190,30 +356,37 @@ export const SimulatorPage: React.FC<SimulatorPageProps> = ({
                 </span>
               </div>
               <div className="text-xs text-[var(--text-muted)] mt-0.5 flex flex-wrap items-center gap-3">
-                <span>Franchise: <strong className="text-[var(--text-primary)]">{currentStadium.config.franchise}</strong></span>
+                <span>
+                  Franchise: <strong className="text-[var(--text-primary)]">{currentStadium.config.franchise}</strong>
+                </span>
                 <span>Capacity: {currentStadium.config.capacity}</span>
-                <span>Built-in ground effect: <strong className="font-mono text-[var(--turf-accent)]">{currentStadium.config.homeEffect > 0 ? `+${currentStadium.config.homeEffect}` : currentStadium.config.homeEffect} runs</strong></span>
+                <span>
+                  Built-in ground effect:{' '}
+                  <strong className="font-mono text-[var(--turf-accent)]">
+                    {currentStadium.config.homeEffect > 0 ? `+${currentStadium.config.homeEffect}` : currentStadium.config.homeEffect} runs
+                  </strong>
+                </span>
               </div>
             </div>
           </div>
 
           <div className="text-right shrink-0">
-            <span className="text-xs text-[var(--text-muted)]">Stratified Sample:</span>
+            <span className="text-xs text-[var(--text-muted)]">Sample Size:</span>
             <div className="text-xs font-mono font-bold text-[var(--text-primary)]">
-              15 Home Innings vs 15 Away Innings
+              {currentStadium.homeInnings.length} Home vs {currentStadium.awayInnings.length} Away Innings
             </div>
           </div>
         </div>
       )}
 
-      {/* 4. Scoreboard Readout */}
+      {/* Scoreboard Readout */}
       <Scoreboard
         stats={activeStats}
         stadiumName={currentStadium.config.venue}
         isPooled={isPooled}
       />
 
-      {/* 5. Distribution Views: Population Pyramid (Stratified) or Mirrored Histogram (Pooled) */}
+      {/* Distribution Views: Population Pyramid (Stratified) or Mirrored Histogram (Pooled) */}
       {isPooled ? (
         <PooledHistogram
           homeInnings={seasonData.pooled.homeInnings}
@@ -229,13 +402,13 @@ export const SimulatorPage: React.FC<SimulatorPageProps> = ({
         />
       )}
 
-      {/* 6. Live t-Distribution & Rejection Region Plot */}
+      {/* Live t-Distribution & Rejection Region Plot */}
       <TDistributionPlot
         stats={activeStats}
         stadiumName={isPooled ? 'Pooled League' : currentStadium.config.venue}
       />
 
-      {/* 7. Contextual Type I and Type II Error Analysis */}
+      {/* Contextual Type I and Type II Error Analysis */}
       <RiskCallout
         stats={activeStats}
         stadiumName={isPooled ? 'All 10 IPL Grounds Combined' : currentStadium.config.venue}

@@ -1,4 +1,4 @@
-import type { Innings, SeasonData, StadiumData, PooledData } from '../types/stats';
+import type { Innings, SeasonData, StadiumData, PooledData, WelchResult } from '../types/stats';
 import { STADIUMS_CONFIG } from '../data/stadiums';
 import { runWelchTTest } from './statsEngine';
 
@@ -30,23 +30,51 @@ const BASE_HOME_SD = 24.0;
 const AWAY_SD_FACTOR = 1.05; // 25.2 runs
 const INNINGS_PER_SIDE = 15;
 
+export interface SimulationOptions {
+  sampleSize?: number;
+  groundEffectModifier?: number;
+  baseStdDev?: number;
+  alpha?: number;
+}
+
+/**
+ * Recalculate stats for a stadium based on innings
+ */
+export function recalculateStadiumStats(
+  homeInnings: Innings[],
+  awayInnings: Innings[],
+  alpha: number = 0.05
+): WelchResult {
+  const homeScores = homeInnings.map((item) => item.runs);
+  const awayScores = awayInnings.map((item) => item.runs);
+  return runWelchTTest(homeScores, awayScores, alpha);
+}
+
 /**
  * Generate a full IPL Season dataset across all 10 stadiums plus pooled league data
  */
-export function generateSeason(seasonId: number = 1): SeasonData {
+export function generateSeason(
+  seasonId: number = 1,
+  options: SimulationOptions = {}
+): SeasonData {
+  const sampleSize = options.sampleSize ?? INNINGS_PER_SIDE;
+  const groundMod = options.groundEffectModifier ?? 0;
+  const baseSd = options.baseStdDev ?? BASE_HOME_SD;
+  const alpha = options.alpha ?? 0.05;
+
   const allHomeInnings: Innings[] = [];
   const allAwayInnings: Innings[] = [];
 
   const stadiumsData: StadiumData[] = STADIUMS_CONFIG.map((config) => {
-    const homeMean = BASE_LEAGUE_MEAN + config.homeEffect;
-    const homeSd = BASE_HOME_SD;
+    const homeMean = BASE_LEAGUE_MEAN + config.homeEffect + groundMod;
+    const homeSd = baseSd;
     const awayMean = BASE_LEAGUE_MEAN;
-    const awaySd = BASE_HOME_SD * AWAY_SD_FACTOR;
+    const awaySd = baseSd * AWAY_SD_FACTOR;
 
     const homeInnings: Innings[] = [];
     const awayInnings: Innings[] = [];
 
-    for (let i = 0; i < INNINGS_PER_SIDE; i++) {
+    for (let i = 0; i < sampleSize; i++) {
       const hRuns = generateInningsScore(homeMean, homeSd);
       const aRuns = generateInningsScore(awayMean, awaySd);
 
@@ -75,9 +103,7 @@ export function generateSeason(seasonId: number = 1): SeasonData {
       allAwayInnings.push(aItem);
     }
 
-    const homeScores = homeInnings.map((item) => item.runs);
-    const awayScores = awayInnings.map((item) => item.runs);
-    const stats = runWelchTTest(homeScores, awayScores);
+    const stats = recalculateStadiumStats(homeInnings, awayInnings, alpha);
 
     return {
       config,
@@ -87,10 +113,8 @@ export function generateSeason(seasonId: number = 1): SeasonData {
     };
   });
 
-  // Calculate Pooled / Global Welch's t-test (150 home vs 150 away)
-  const pooledHomeScores = allHomeInnings.map((item) => item.runs);
-  const pooledAwayScores = allAwayInnings.map((item) => item.runs);
-  const pooledStats = runWelchTTest(pooledHomeScores, pooledAwayScores);
+  // Calculate Pooled / Global Welch's t-test
+  const pooledStats = recalculateStadiumStats(allHomeInnings, allAwayInnings, alpha);
 
   const pooled: PooledData = {
     homeInnings: allHomeInnings,

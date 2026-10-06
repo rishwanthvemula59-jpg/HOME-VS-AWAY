@@ -168,9 +168,13 @@ export function calculateSampleStats(values: number[]): {
  * 
  * H0: mu_home <= mu_away
  * Ha: mu_home > mu_away (Right-tailed)
- * alpha: 0.05
+ * alpha: significance level (defaults to 0.05)
  */
-export function runWelchTTest(homeScores: number[], awayScores: number[]): WelchResult {
+export function runWelchTTest(
+  homeScores: number[],
+  awayScores: number[],
+  alpha: number = 0.05
+): WelchResult {
   const home = calculateSampleStats(homeScores);
   const away = calculateSampleStats(awayScores);
 
@@ -198,8 +202,8 @@ export function runWelchTTest(homeScores: number[], awayScores: number[]): Welch
 
   // Exact right-tailed p-value: P(T_df > t_observed)
   const pValue = studentTRightTailedPValue(tStat, df);
-  const tCrit = studentTCriticalValue(0.05, df);
-  const isSignificant = pValue < 0.05;
+  const tCrit = studentTCriticalValue(alpha, df);
+  const isSignificant = pValue < alpha;
 
   return {
     nHome: home.n,
@@ -217,5 +221,6 @@ export function runWelchTTest(homeScores: number[], awayScores: number[]): Welch
     pValue,
     tCrit,
     isSignificant,
+    alpha,
   };
 }

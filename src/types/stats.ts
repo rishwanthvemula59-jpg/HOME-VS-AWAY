@@ -49,8 +49,9 @@ export interface WelchResult {
   tStat: number;
   df: number;
   pValue: number; // P(T > t) right-tailed
-  tCrit: number;  // Critical value for alpha = 0.05, df
-  isSignificant: boolean; // pValue < 0.05
+  tCrit: number;  // Critical value for alpha, df
+  isSignificant: boolean; // pValue < alpha
+  alpha?: number; // Significance level (default 0.05)
 }
 
 export interface StadiumData {

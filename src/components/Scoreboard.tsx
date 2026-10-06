@@ -147,7 +147,7 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({ stats, stadiumName, isPo
             <span className={isSig ? 'text-emerald-600 dark:text-emerald-400 font-semibold' : 'text-[var(--text-muted)]'}>
               p-Value (Right Tail)
             </span>
-            <span className="text-[10px] text-[var(--text-muted)]">&alpha; = 0.05</span>
+            <span className="text-[10px] text-[var(--text-muted)]">&alpha; = {stats.alpha ?? 0.05}</span>
           </div>
           <div
             className={`mt-1 text-2xl sm:text-3xl font-bold font-scoreboard ${
@@ -161,7 +161,7 @@ export const Scoreboard: React.FC<ScoreboardProps> = ({ stats, stadiumName, isPo
             )}
           </div>
           <div className="text-[11px] text-[var(--text-muted)] mt-0.5">
-            {isSig ? 'p < 0.05 (Significant)' : 'p ≥ 0.05 (Not Sig)'}
+            {isSig ? `p < ${stats.alpha ?? 0.05} (Significant)` : `p ≥ ${stats.alpha ?? 0.05} (Not Sig)`}
           </div>
         </div>
       </div>
